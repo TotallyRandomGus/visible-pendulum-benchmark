@@ -1,0 +1,32 @@
+name: Add competitor to list when confirmed by tag
+
+on:
+  issues:
+    types: [labeled]
+jobs:
+    
+  add-competitor:
+    if: ${{ contains(github.event.issue.labels.*.name, 'participation') && contains(github.event.issue.labels.*.name, 'accepted') }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump github.event
+        run: echo '${{ toJson(github.event) }}'
+        
+      - name: Checkout files
+        uses: actions/checkout@v2
+        
+      - name: Add competitor to file
+        run: echo $(echo '${{ github.event.issue.body }}' | tr -d [:space:] | sed 's/###GitHubrepositorylink/${{ github.event.issue.number }}:/') >> competitors.txt
+
+      - name: Commit files
+        run: |
+            git config user.email "bot@example.com"
+            git config user.name "Iam Acomputer"
+            git add competitors.txt
+            git commit -m "Here comes a new challenger!"
+      - run: git push
+
+      - uses: peter-evans/close-issue@v1
+        with:
+          comment: Here comes a new challenger! You have been added to the benchmark ranking.

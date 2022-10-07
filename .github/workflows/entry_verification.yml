@@ -1,0 +1,42 @@
+name: Verify a competitor's repo
+
+on:
+  issues:
+    types: [labeled]
+jobs:
+    
+  add-competitor:
+    #if: ${{ contains(github.event.issue.labels.*.name, 'participation') }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump github.event
+        run: echo '${{ toJson(github.event) }}'
+        
+      - name: Check out the repo
+        uses: actions/checkout@v2
+        
+      - name: Verify repo link
+        run: |
+          body_text=$'${{ github.event.issue.body }}'
+          echo $body_text
+          user_repo=$(grep -oE '[[:alnum:]._-]+/[[:alnum:]._-]+' <<< $body_text)
+          echo $user_repo
+          cat <<< '1:'$user_repo > competitors.txt
+        
+      - name: Test competitor's controller
+        id: controller_test
+        continue-on-error: true
+        uses: cyberbotics/benchmark-record-action@forkSystem 
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BOT_PAT_KEY: ${{ secrets.BOT_PAT_KEY }}
+          BOT_USERNAME: ${{ secrets.BOT_USERNAME }}
+          
+      - name: If controller works
+        if: ${{ steps.controller_test.outcome == 'success' }}
+        run: echo 'the repo seems to be working'
+      
+      - name: If repo misconfigured
+        if: ${{ steps.controller_test.outcome != 'success' }}
+        run: echo 'the repo seems to be completely BROKEN'

@@ -1,0 +1,15 @@
+name: Participate in benchmark
+description: Participate to the benchmark by raising an issue! 
+labels: [participation]
+
+title: "Participate in benchmark"
+
+body:
+- type: input
+  id: repo_link
+  attributes:
+    label: Github repository link
+    description: Paste here your GitHub username and your repository name with a / in between
+    placeholder: username/repositoryName
+  validations:
+    required: true

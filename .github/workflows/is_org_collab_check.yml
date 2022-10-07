@@ -1,0 +1,58 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Check if the organizer is set as collaborator
+
+# Controls when the workflow will run
+#on: [push, workflow_dispatch]
+on: [workflow_dispatch]
+
+permissions: write-all
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  ORGANIZER: Jean-Eudes-le-retour
+  ORG_REPO: organisation-test-bare
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  check_org_collab:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Runs a set of commands using the runners shell
+      #- name: Dump github.event
+      #  run: echo '${{ toJson(github) }}' | jq
+      #- name: Check if the cookie is present (check already done)
+      - name: Check if the organizer is set as collaborator
+        id: collab_check
+        continue-on-error: true
+        run: |
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            /repos/$GITHUB_REPOSITORY/collaborators/$ORGANIZER
+            
+      - name: Organizer is not a collaborator yet
+        if: ${{ steps.collab_check.outcome != 'success' }}
+        run: echo "Please add $ORGANIZER as a collaborator to this repo.\
+                If that is the case, ignore this warning and wait for the organizer to accept your subscription."
+                
+      - name: Message if in collaborators
+        if: ${{ steps.collab_check.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+          --repo "${{ github.repository }}" \
+          --title "Collaboration confirmed, please register to organizer repository" \
+          --body "#### The oganizer has been successfully added as a collaborator!
+          Please register to their repo by using the issue template at https://github.com/${{ env.ORGANIZER }}/${{ env.ORG_REPO }}/issues/new?template=PARTICIPATION.yml&title=Registration+to+benchmark"
+          
+      #- name: Disable workflow
+      #  if: ${{ steps.collab_check.outcome == 'success' }}
+      #  run: |
+      #    gh api \
+      #      --method PUT \
+      #      -H "Accept: application/vnd.github+json" \
+      #      /repos/$GITHUB_REPOSITORY/actions/workflows/is_org_collab_check.yml/disable
